@@ -1,6 +1,11 @@
 import pandas as pd
+import logging
 import requests
 import json
+
+logging.basicConfig(filename="logs.log", level=logging.INFO)
+# truncating log files before new run
+open("logs.log", "w").close()
 
 excel = pd.read_excel("rooms_list.xlsx")
 
@@ -11,7 +16,11 @@ url_rooms = "https://127.0.1.1/rooms/api/admin/rooms/"
 # verify=False because local build so no 
 # SSL cert was needed but requests throws
 # an exception
-response = session.get(url_locations, verify=False)
+try:
+    response = session.get(url_locations, verify=False)
+except requests.RequestException as e:
+    logging.error(e)
+    
 
 # using Indico's API requires the X-CSRF-Token
 # and the indico_session cookie to go through.
@@ -38,12 +47,21 @@ for index, row in excel.iterrows():
         "name": building_number
     }
     
-    response = session.post(url_locations, headers=headers, cookies=cookies, data=data, verify=False)
+    try:
+        response = session.post(url_locations, headers=headers, cookies=cookies, data=data, verify=False)
+        logging.info(f"Building {building_number} created")
+    except requests.RequestException as e:
+        logging.error(e)
     
 # fetching information of all available locations from
 # the API, mainly location_id, to create a room specific
 # to that location only
-response = session.get(url_locations, headers=headers, cookies=cookies, verify=False)
+try:
+    response = session.get(url_locations, headers=headers, cookies=cookies, verify=False)
+    logging.info("Location information fetched")
+except requests.RequestException as e:
+    logging.error(e)
+    
 location_data = json.loads(response.text)
 
 # iterating through each location available
@@ -77,6 +95,9 @@ for location in location_data:
                 "longitude": row["LONGITUDE"],
                 "capacity": row["CAPACITY"]
             }
-            
-            response = session.post(url_rooms, headers=headers, cookies=cookies, data=data, verify=False)
+            try:
+                response = session.post(url_rooms, headers=headers, cookies=cookies, data=data, verify=False)
+                logging.info(f"Adding [{data}]")
+            except requests.RequestException as e:
+                logging.error(e)
 
