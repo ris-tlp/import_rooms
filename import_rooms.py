@@ -7,11 +7,15 @@ logging.basicConfig(filename="logs.log", level=logging.INFO)
 # truncating log files before new run
 open("logs.log", "w").close()
 
+# reading xcsrf token, indico session cookie and domain
+with open("credentials.json") as f:
+    creds = json.load(f)
+
 excel = pd.read_excel("rooms_list.xlsx")
 
 session = requests.Session()
-url_locations = "https://127.0.1.1/rooms/api/admin/locations"
-url_rooms = "https://127.0.1.1/rooms/api/admin/rooms/"
+url_locations = f"{creds['domain']}/rooms/api/admin/locations"
+url_rooms = f"{creds['domain']}/rooms/api/admin/rooms/"
 
 # verify=False because local build so no 
 # SSL cert was needed but requests throws
@@ -21,17 +25,16 @@ try:
 except requests.RequestException as e:
     logging.error(e)
     
-
 # using Indico's API requires the X-CSRF-Token
 # and the indico_session cookie to go through.
 # Acquiring these headers requires a user to be
 # logged in to Indico
 headers = {
-    "X-CSRF-Token": "ec862943-e561-4315-9e3d-3088076c0092"
+    "X-CSRF-Token": creds["xcsrf_token"]
 }
 
 cookies = {
-    "indico_session": "a025c2c6-fba0-49d8-93b2-7dbe01f0ac4c"
+    "indico_session": creds["indico_cookie"]
 }
 
 
